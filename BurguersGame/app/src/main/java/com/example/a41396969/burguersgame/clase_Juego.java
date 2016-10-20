@@ -6,6 +6,7 @@ import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.MotionEvent;
 
+import org.cocos2d.actions.base.Action;
 import org.cocos2d.actions.instant.CallFuncN;
 import org.cocos2d.actions.interval.IntervalAction;
 import org.cocos2d.actions.interval.MoveBy;
@@ -46,7 +47,7 @@ public class clase_Juego {
     float AltoPantalla, AnchoPantalla;
     CCPoint posicionFinalIngrediente;
     ArrayList<Ingredientes> listaIngredientes, listaIngredientesEnTubo;
-    Boolean TocoIngrediente;
+    Boolean TocoIngrediente, estoyRecorriendo;
 
 
     public clase_Juego(CCGLSurfaceView vistaDelJuego)
@@ -128,9 +129,11 @@ public class clase_Juego {
                 @Override
                 public void run()
                 {
-                    Log.d("capaFrente", "Llamo al metodo elegirIngredienteAlAzar");
-                    elegirIngredienteAlAzar(); /* este método va a llamar al metodo ponerIngrediente pasandole
+                    if (!estoyRecorriendo) {
+                        Log.d("capaFrente", "Llamo al metodo elegirIngredienteAlAzar");
+                        elegirIngredienteAlAzar(); /* este método va a llamar al metodo ponerIngrediente pasandole
                                           como parametro el ingrediente al azar que elegió*/
+                    }
                 }
             };
 
@@ -308,6 +311,9 @@ public class clase_Juego {
         {
             CCPoint posicionIngrediente = new CCPoint();
             posicionIngrediente.x=tubo.getPositionX();
+
+            //ingrediente.get_Ingrediente().runAction(RotateTo.action(0.2f, 90f));
+
             if (listaIngredientesEnTubo.isEmpty())
             {
                posicionIngrediente.y = tubo.getPositionY() - tubo.getHeight()/2 +25;
@@ -326,6 +332,8 @@ public class clase_Juego {
             Log.d("arrayIngreTubo","La cantidad de ingredientes en el tubo es de: "+ listaIngredientesEnTubo.size());
             listaIngredientesEnTubo.add(ingrediente);
             Log.d("arrayIngreTubo","Agrego un ingrediente, ahora hay: "+ listaIngredientesEnTubo.size());
+
+            //super.addChild(ingrediente.get_Ingrediente());
         }
 
         private void IngredienteFueTocado(CCPoint posicionTocada)
@@ -375,19 +383,24 @@ public class clase_Juego {
             float posicionX;
 
             Log.d("llegoAlFinal","Pregunto si la posicion del ingrediente coincide con la posicion final");
+            Log.d("llegoAlFinal","La lista de ingredientes antes de recorrerla tiene: "+listaIngredientes.size());
 
+           int IngredienteActual=0;
             for (Ingredientes unIngrediente : listaIngredientes)
             {
+                estoyRecorriendo=true;
                 posicionX = unIngrediente.get_Ingrediente().getPositionX();
+                Log.d("llegoAlFinal","Ingrediente actual: "+ (++IngredienteActual));
                 Log.d("llegoAlFinal","la cantidad de ingredientes en listaIngredientes es de: "+listaIngredientes.size());
                 Log.d("llegoAlFinal","El ingrediente actual es: "+ unIngrediente.get_Tipo());
                 Log.d("llegoAlFinal","Posicion del ingrediente: "+ posicionX + " - Posicion final: "+ posicionFinalIngrediente.x);
-                if (posicionX == posicionFinalIngrediente.x)
+                if (posicionX >= posicionFinalIngrediente.x)
                 {
                     Log.d("llegoAlFinal","La posicion X del ingrediente ("+posicionX+") llegó al final de la cinta, lo elimino");
                     eliminarIngrediente(unIngrediente,true, null);
                 }
             }
+           estoyRecorriendo=false;
         }
 
         private void eliminarIngrediente(Ingredientes spriteAEliminar, Boolean estaEnLaCinta, Boolean Eliminar)
@@ -457,10 +470,9 @@ public class clase_Juego {
         public void borrarIngrediente(CocosNode ingrediente)
         {
             Log.d("borrarIngrediente","Termino el recorrido");
-
-            super.removeChild(ingrediente, true);
             listaIngredientes.remove(ingrediente);
             Log.d("borrarIngrediente","Se borró el ingrediente, quedan: "+ listaIngredientes.size());
+            super.removeChild(ingrediente, true);
         }
 
         public boolean EstaEntre(int NumeroAComparar, int NumeroMenor, int NumeroMayor)
@@ -537,6 +549,8 @@ public class clase_Juego {
 
         private void ponerIngrediente(String ingrediente) {
             Log.d("ponerIngrediente", "Comienza el metodo");
+
+            sprIngrediente=new Ingredientes();
 
             Log.d("ponerIngredientes", "Inicializo el sprite del ingrediente, utilizo el parametro");
             sprIngrediente.set_Ingrediente(Sprite.sprite(ingrediente + ".png"));

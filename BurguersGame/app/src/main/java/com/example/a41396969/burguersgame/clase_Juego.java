@@ -5,6 +5,7 @@ import android.text.LoginFilter;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.widget.Toast;
 
 import org.cocos2d.actions.base.Action;
 import org.cocos2d.actions.instant.CallFuncN;
@@ -47,7 +48,7 @@ public class clase_Juego {
     float AltoPantalla, AnchoPantalla;
     CCPoint posicionFinalIngrediente;
     ArrayList<Ingredientes> listaIngredientes, listaIngredientesEnTubo;
-    Boolean TocoIngrediente, estoyRecorriendo;
+    Boolean TocoIngrediente, estoyRecorriendo,estoyAgregandoAlTubo;
 
 
     public clase_Juego(CCGLSurfaceView vistaDelJuego)
@@ -62,6 +63,8 @@ public class clase_Juego {
         sprIngrediente= new Ingredientes();
         Log.d("ComenzarJuego","Instancio los objetos de la clase Ingredientes - IngredienteTocado");
         IngredienteTocado = new Ingredientes();
+
+        estoyAgregandoAlTubo=false;
 
         Log.d("ComenzarJuego", "Llamo al director y pongo _VistaDelJuego");
         Director.sharedDirector().attachInView(_VistaDelJuego);
@@ -289,7 +292,12 @@ public class clase_Juego {
             switch (resultado)
             {
                 case "EA":
-                    agregoIngredienteAlTubo(Ingrediente);
+                    //TODO Fijarse como hacer para que puedan caer ingredientes
+                    if (!estoyAgregandoAlTubo) {
+                        estoyAgregandoAlTubo = true;
+
+                        agregoIngredienteAlTubo(Ingrediente);
+                    }
                     break;
                 case "IA":
                     break;
@@ -319,19 +327,26 @@ public class clase_Juego {
                posicionIngrediente.y = tubo.getPositionY() - tubo.getHeight()/2 +25;
                 //ingrediente.runAction(MoveTo.action(0.1f,tubo.getPositionX(),(tubo.getPositionY() - tubo.getHeight()/2)+25));
             }
-           /* else
+            else
             {
-                for (Sprite unIngrediente:listaIngredientesEnTubo)
+                for (Ingredientes unIngrediente:listaIngredientesEnTubo)
                 {
-                    posicionIngrediente.y = unIngrediente.getPositionY() + unIngrediente.getHeight()/2;
+                    posicionIngrediente.y = unIngrediente.get_Ingrediente().getPositionY() + unIngrediente.get_Ingrediente().getHeight()/2;
                 }
-            }*/
+
+            }
             Log.d("arrayIngreTubo","Muevo el ingrediente a la posicion - X: "+posicionIngrediente.x
             + " - Y: "+posicionIngrediente.y);
             ingrediente.get_Ingrediente().runAction(MoveTo.action(0.1f,posicionIngrediente.x,posicionIngrediente.y+35));
             Log.d("arrayIngreTubo","La cantidad de ingredientes en el tubo es de: "+ listaIngredientesEnTubo.size());
             listaIngredientesEnTubo.add(ingrediente);
             Log.d("arrayIngreTubo","Agrego un ingrediente, ahora hay: "+ listaIngredientesEnTubo.size());
+
+
+            if (ingrediente.get_Ingrediente().getPositionY()== posicionIngrediente.y+35)
+            {
+                estoyAgregandoAlTubo=false;
+            }
 
             //super.addChild(ingrediente.get_Ingrediente());
         }
@@ -366,6 +381,10 @@ public class clase_Juego {
                     super.addChild(unIngrediente.get_Ingrediente());
                 }
             }
+            if (!estoyRecorriendo)
+            {
+                listaIngredientes.remove(IngredienteTocado);
+            }
         }
         private void TrasladarIngrediente(float DestinoX, float DestinoY)
         {
@@ -394,7 +413,7 @@ public class clase_Juego {
                 Log.d("llegoAlFinal","la cantidad de ingredientes en listaIngredientes es de: "+listaIngredientes.size());
                 Log.d("llegoAlFinal","El ingrediente actual es: "+ unIngrediente.get_Tipo());
                 Log.d("llegoAlFinal","Posicion del ingrediente: "+ posicionX + " - Posicion final: "+ posicionFinalIngrediente.x);
-                if (posicionX >= posicionFinalIngrediente.x)
+                if (posicionX == posicionFinalIngrediente.x)
                 {
                     Log.d("llegoAlFinal","La posicion X del ingrediente ("+posicionX+") llegó al final de la cinta, lo elimino");
                     eliminarIngrediente(unIngrediente,true, null);
@@ -403,7 +422,7 @@ public class clase_Juego {
            estoyRecorriendo=false;
         }
 
-        private void eliminarIngrediente(Ingredientes spriteAEliminar, Boolean estaEnLaCinta, Boolean Eliminar)
+        private void eliminarIngrediente(Ingredientes IngredienteAEliminar, Boolean estaEnLaCinta, Boolean Eliminar)
         {
 
             MoveTo moverParaDesaparecer;
@@ -411,10 +430,10 @@ public class clase_Juego {
                 Log.d("eliminarIngrediente", "Declaro e inicializo los movimientos para la secuencia");
                 RotateBy rotarTreintaGrados;
                 rotarTreintaGrados = RotateBy.action(0.2f, 30f);
-                moverParaDesaparecer = MoveTo.action(1f, spriteAEliminar.get_Ingrediente().getPositionX() + 100, -spriteAEliminar.get_Ingrediente().getHeight() / 2 - 150);
+                moverParaDesaparecer = MoveTo.action(1f, IngredienteAEliminar.get_Ingrediente().getPositionX() + 100, -IngredienteAEliminar.get_Ingrediente().getHeight() / 2 - 150);
 
                 Log.d("eliminarIngrediente", "Ejecuto una acción previa a la secuencia");
-                spriteAEliminar.get_Ingrediente().runAction(moverParaDesaparecer);
+                IngredienteAEliminar.get_Ingrediente().runAction(moverParaDesaparecer);
 
                 Log.d("eliminarIngrediente", "Defino la funcion a invocar al finalizar la secuencia");
                 CallFuncN FinDelMovimiento;
@@ -422,22 +441,25 @@ public class clase_Juego {
 
                 Log.d("eliminarIngrediente", "Defino la secuencia");
                 IntervalAction secuencia;
-                secuencia = Sequence.actions(rotarTreintaGrados, rotarTreintaGrados, FinDelMovimiento);
+                secuencia = Sequence.actions(rotarTreintaGrados, rotarTreintaGrados);
+
+                Log.d("eliminarIngrediente", "Elimino el ingrediente de la lista");
+                borrarIngrediente(IngredienteAEliminar);
 
                 Log.d("eliminarIngrediente", "Ejecuto la secuencia");
-                spriteAEliminar.get_Ingrediente().runAction(secuencia);
+                IngredienteAEliminar.get_Ingrediente().runAction(secuencia);
 
                 Log.d("eliminarIngrediente", "Elimino el ingrediente");
-                super.addChild(spriteAEliminar.get_Ingrediente());
+                super.addChild(IngredienteAEliminar.get_Ingrediente());
             }
             else
             {
                 if(Eliminar) {
                     Log.d("eliminarIngrediente", "Declaro e inicializo los movimientos para la secuencia");
-                    moverParaDesaparecer = MoveTo.action(0.5f, IngredienteTocado.get_Ingrediente().getPositionX(), -IngredienteTocado.get_Ingrediente().getHeight() / 2);
+                    moverParaDesaparecer = MoveTo.action(0.5f, IngredienteAEliminar.get_Ingrediente().getPositionX(), -IngredienteAEliminar.get_Ingrediente().getHeight() / 2);
 
                     Log.d("eliminarIngrediente", "Ejecuto una acción previa a la secuencia");
-                    spriteAEliminar.get_Ingrediente().runAction(moverParaDesaparecer);
+                    IngredienteAEliminar.get_Ingrediente().runAction(moverParaDesaparecer);
 
                     Log.d("eliminarIngrediente", "Defino la funcion a invocar al finalizar la secuencia");
                     CallFuncN FinDelMovimiento;
@@ -445,13 +467,17 @@ public class clase_Juego {
 
                     Log.d("eliminarIngrediente", "Defino la secuencia");
                     IntervalAction secuencia;
-                    secuencia = Sequence.actions(moverParaDesaparecer, FinDelMovimiento);
+                    secuencia = Sequence.actions(moverParaDesaparecer);
+
+                    Log.d("eliminarIngrediente", "Elimino el ingrediente de la lista");
+                    borrarIngrediente(IngredienteAEliminar);
 
                     Log.d("eliminarIngrediente", "Ejecuto la secuencia");
-                    spriteAEliminar.get_Ingrediente().runAction(secuencia);
+                    IngredienteAEliminar.get_Ingrediente().runAction(secuencia);
 
                     Log.d("eliminarIngrediente", "Elimino el ingrediente");
-                    super.addChild(spriteAEliminar.get_Ingrediente());
+                    super.addChild(IngredienteAEliminar.get_Ingrediente());
+                    
                 }
                 else
                 {
@@ -459,20 +485,25 @@ public class clase_Juego {
                     moverParaDesaparecer = MoveTo.action(0.5f, IngredienteTocado.get_Ingrediente().getPositionX(), -IngredienteTocado.get_Ingrediente().getHeight() / 2);
 
                     Log.d("eliminarIngrediente", "Ejecuto el movimiento");
-                    spriteAEliminar.get_Ingrediente().runAction(moverParaDesaparecer);
+                    IngredienteAEliminar.get_Ingrediente().runAction(moverParaDesaparecer);
 
+                    Log.d("eliminarIngrediente", "Elimino el ingrediente de la lista");
+                    borrarIngrediente(IngredienteAEliminar);
+                    
                     Log.d("eliminarIngrediente", "Elimino el ingrediente");
-                    super.addChild(spriteAEliminar.get_Ingrediente());
+                    super.addChild(IngredienteAEliminar.get_Ingrediente());
                 }
             }
         }
 
-        public void borrarIngrediente(CocosNode ingrediente)
+        public void borrarIngrediente(Ingredientes ingrediente)
         {
-            Log.d("borrarIngrediente","Termino el recorrido");
-            listaIngredientes.remove(ingrediente);
-            Log.d("borrarIngrediente","Se borró el ingrediente, quedan: "+ listaIngredientes.size());
-            super.removeChild(ingrediente, true);
+            if (!estoyRecorriendo) {
+                Log.d("borrarIngrediente", "Termino el recorrido");
+                listaIngredientes.remove(ingrediente);
+                Log.d("borrarIngrediente", "Se borró el ingrediente, quedan: " + listaIngredientes.size());
+                super.removeChild(ingrediente.get_Ingrediente(), true);
+            }
         }
 
         public boolean EstaEntre(int NumeroAComparar, int NumeroMenor, int NumeroMayor)
